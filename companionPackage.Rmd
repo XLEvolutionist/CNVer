@@ -1,0 +1,253 @@
+---
+title: "Making a Zea reference companion for CNVer"
+author: "Simon Renny-Byfield"
+date: "November 7, 2014"
+output: html_document
+---
+
+The program [CNVer](http://compbio.cs.toronto.edu/CNVer/) can be used to assess and score CNVs (and PAVs) using paired end info from mapping short Illumina reads (.bam file are used as input). The [paper](http://genome.cshlp.org/content/20/11/1613) gives a good description of the algorithm and I leave it to the reader to research exactly how this works.
+
+[Here](http://compbio.cs.toronto.edu/cnver/README-0.8.1.txt) is a description of getting the program up and running. In order to use CNVer with non-human datasets (i.e. if you want to use a non-human reference genome) you must create a companion package that contains some information regarding the reference sequence. Detailed below are the requirements of that package.
+
+<br>
+
+```
+How to run on different reference/organism:
+We currently provide only the hg18 human companion package.  In order to run with different reference sequences, you will need to build a different companion package.
+The package must contain the following directories:
+
+1. fasta_files_folder/: Fasta files for reference sequences (e.g. chr1.fa, chr2.fa, ...)
+2. contig_breaks_folder/: Interval files containing the contig breaks in the reference.  These are annotations of regions with unreliable sequence that will be ignored by CNVer. An interval file has lines in the form of "ref_name start end", e.g. "chr1 233 450".  There should be one file for each reference.
+3. repeat_regions_folder/: Interval files containing high-copy count regions of the reference (one file per reference sequence).  These are also regions that are ignored by CNVer. We include a script sim_repeats.sh which can be used to find high-copy count regions for any fasta file.
+4. self_alignments_folder/: These contain all significant local alignments of the reference to itself (one file per reference sequence).  For a description of the file format, see http://genome.ucsc.edu/goldenPath/help/axt.html.  For a way to generate these, see ftp://hgdownload.cse.ucsc.edu/goldenPath/hg18/vsSelf/README.chainSelf.txt.
+5. allchr.txt: A short text file containing the names of all the reference sequences (chromosomes) of the organism.
+6. autosomes.txt:  A short text file containing the names of all the DIPLOID reference sequences (chromosomes) of the organism.
+
+
+For any questions/issues/bugs, please contact cnver@cs.toronto.edu. If relevant, please include
+1. A long recursive listing (including time stamps and file-sizes) of the CNVer work_dir
+2. A long recursive listing of the ref_folder (where the companion package is)
+3. A long recursive listing of directory with the read mappings
+4. Contents of map_list file  (if appropriate)
+5. The log.txt file from the directory in which CNVer was invoked.
+7. The stdout and stderr output of the CNVer run.
+
+```
+
+I will go through these options one by one and detail how I did each.
+
+***1  fasta_files_folder***
+
+This is complete. I seprated the single fasta file inot separate files for each sequence using [splitFasta.pl](https://github.com/XLEvolutionist/general_scripts/blob/master/splitFasta.pl).
+
+
+***2 Create a contigs breaks folder***
+
+I have generated a BED file listing the intervals with more than 100 consecutive Ns using:
+
+```
+#!/bin/bash -l
+#SBATCH -D /home/sbyfield/CNVer/refZea/single_files
+#SBATCH -J interval
+#SBATCH -o /home/sbyfield/CNVer/refZea/single_files/out-%j.log
+#SBATCH -e /home/sbyfield/CNVer/refZea/single_files/error-%j.log
+#SBATCH --array=1
+#SBATCH --mem=8000
+
+for i in $(ls *.fasta); do
+         perl /home/sbyfield/CNVer/refZea/generateInterval.pl $i
+done
+```
+and the perl file:
+```
+#!usr/bin/perl
+use strict;
+use warnings;
+use Bio::SeqIO;
+
+###############################
+#Simon Renny-Byfield, UC Davis, 10th November 2014, version 2
+#redacted the use of BioPerl in the second version.
+###############################
+
+#usage script.pl <fasta> 
+
+#This script takes fasta files and splits the sequences into individual files
+
+#open the input file
+open ( FASTA, "<$ARGV[0]" ) || die "Could not open file:$!\n";
+
+#open an output file
+open( OUT , ">$ARGV[0]".".txt" ) || die "Could not open file:$!\n";
+
+my @posi;
+my $substr = "N";
+my $name="";
+my $string="";
+my %seq;
+
+while ( <FASTA> ) {
+  if  ( m/>(\S+)/ ) {
+		$name = $1;
+	}#if
+	else {
+		$seq{$name}.=$_;
+	}#else
+	
+}#while
+close FASTA;
+print "loaded in file..\n";
+
+
+#now for each sequence
+for my $key ( keys ( %seq ) ) {
+		my $pos = -1;
+		my $name = $key;
+		my $str = $seq{$key};
+  		while (1) {
+  			$pos = index($str, $substr, $pos + 1);
+  			last if $pos < 0;
+  			push ( @posi , $pos  );
+  		}#while
+  		my $ranges = &num2range(@posi);
+  		@posi=();
+  		#print $ranges , "\n";
+  		my @range = split /,/ , $ranges;
+  		foreach (@range) {
+  			my @size = split /-/, $_;
+  			next unless scalar @size > 1;
+  			my $len = $size[1] - $size[0];
+  			#print $size[0] ,"\t" , $size[1] ,"\t" , $len , "\n";
+  			#if ( $len >= 100 ) {
+  				print OUT "$name\t$size[0]\t$size[1]\n";
+  			#}#if
+  		}#foreach
+  		
+		$name = $1;
+}#
+close OUT;
+exit;
+```
+Unfortunately the script is terribly inefficient. I think it is because of the use of Bio::SeqIO and very large arrays. I'l try to correct if it does not run well.
+
+***3 Create a repeat regions file for each sequence***
+
+Repeat regions were identifed from the Ref_v3 annotation and gff files were downloaded from Ensamble. I used this:
+```
+cat test.gff3 | grep 'repeat' | cut -f 1,4,5 > out.bed
+```
+to extract all the repeat annotaions in BED format.
+ The resulting file was split into multiple files (one per sequence/chromsome) using a custom perl script:
+
+```
+ #!usr/bin/perl
+use strict;
+use warnings;
+
+##
+#A short script to split a nonchromosomal BED file (i.e. scaffolds) into one file per scaffold.
+##
+
+my %arrays;
+#open the bed file
+open (BED , "<$ARGV[0]" ) ||  die "could not open file:$!\n";
+
+
+while (<BED>) {
+  chomp;
+	#push each line into a hash of arrays
+	my @data = split "\t";
+	push(@{$arrays{$data[0]}}, $_ );
+}#while
+
+#now for each scaffold print out a bed file of repeats
+
+for my $key ( keys ( %arrays ) ) {
+	#grab the corresponding array
+	my @array = @{$arrays{$key}};
+	#open up a bed file for each scaffold
+	open ( OUT , ">$key".".bed" ) || die "Could not open file:$!\n";
+	print OUT "$_\n" for @array;
+}#for
+
+```
+
+***4 Create a self aligment using LastZ***
+
+[LastZ](http://www.bx.psu.edu/miller_lab/dist/README.lastz-1.02.00/README.lastz-1.02.00a.html) is a modifed version of the old BlastZ. You are required to provdie all genoe alighments so that paired end data is not scrambled due to similar regions in different parts of the genome. Lastz does not take large sequences and so you have to split the up. Guidelines into making this alignment file state that:
+
+```
+Any hg18 sequences larger
+than 10,010,000 bases were split into chunks of 10,010,000 bases overlapping
+by 10,000 bases for alignment.  A similar process was followed for hg18,
+with chunks of 10,000,000 overlapping by 0.)  Following alignment, the
+coordinates of the chunk alignments were corrected by the
+blastz-normalizeLav script written by Scott Schwartz of Penn State. 
+```
+
+I have a work in progress command to run alignments:
+
+```
+lastz Zea_mays_main_refgv3_chromosomes.fasta --self --notrivial --hspthresh=5000 > test.txt
+
+```
+
+As an alternative I decided to try [Mugsy](http://www.ncbi.nlm.nih.gov/pmc/articles/PMC3031037/pdf/btq665.pdf), which can be downloaded from [here](http://mugsy.sourceforge.net). This program is more modern than LastZ and is potentailly easier as you can add in a single fasta file for each genome. The output is in MAF format, which may need to be converted at a later date. Here is the bash script used to invoke mugsy:
+
+```
+#!/bin/bash
+#OUTDIR=/home/sbyfield/CNVer/refZea/mugsy_output
+#SBATCH -D /home/sbyfield/CNVer/refZea/mugsy_output
+#SBATCH -o /home/sbyfield/CNVer/refZea/mugsy_output/stdout_log-%j.txt
+#SBATCH -e /home/sbyfield/CNVer/refZea/mugsy_output/stderr_log-%j.txt
+#SBATCH -J mugsy
+#SBATCH --mem=16000
+#$BATCH --cpus-per-task=1
+
+echo "Starting Job:"
+date
+echo ""
+
+source ~/mugsy/mugsyenv.sh
+
+mugsy --directory /home/sbyfield/CNVer/refZea/mugsy_output -p mugsy_ouput ~/CNVer/refZea/fasta_files_folder/10.fasta ~/CNVer/refZea/fasta_files_folder/8.fasta
+
+echo "Done!:"
+date
+```
+
+This runs well enough and produces MAF ouput. Which is kinda annoying. Parsing the co-ordiantes will require some scripting, but is possible with a little thought. Here is a description of the MAF file format from [UCSC](http://genome.ucsc.edu/FAQ/FAQformat.html#format5).
+
+```
+Lines starting with 's' -- a sequence within an alignment block
+
+ s hg16.chr7    27707221 13 + 158545518 gcagctgaaaaca
+ s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
+ s baboon         249182 13 +   4622798 gcagctgaaaaca
+ s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
+The 's' lines together with the 'a' lines define a multiple alignment. The 's' lines have the following fields which are defined by position rather than name=value pairs.
+src -- The name of one of the source sequences for the alignment. For sequences that are resident in a browser assembly, the form 'database.chromosome' allows automatic creation of links to other assemblies. Non-browser sequences are typically reference by the species name alone.
+start -- The start of the aligning region in the source sequence. This is a zero-based number. If the strand field is '-' then this is the start relative to the reverse-complemented source sequence (see Coordinate Transforms).
+size -- The size of the aligning region in the source sequence. This number is equal to the number of non-dash characters in the alignment text field below.
+strand -- Either '+' or '-'. If '-', then the alignment is to the reverse-complemented source.
+srcSize -- The size of the entire source sequence, not just the parts involved in the alignment.
+text -- The nucleotides (or amino acids) in the alignment and any insertions (dashes) as well.
+```
+
+
+
+***5. Generate allchr.txt***
+
+I achieved this with the following command:
+
+```
+~/CNVer/refZea/fasta_files_folder$ ls *.fasta | sed 's/.fasta//g' > ../allchr.txt
+```
+whilst in fasta_files_folder/
+
+***6. Generate autosomes.txt***
+
+I believe this will be a direct copy of allChr.txt as *Zea mays* is a functional diploid.
+
+
+
