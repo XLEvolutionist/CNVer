@@ -189,106 +189,45 @@ I have a work in progress command to run alignments which works on a batch proce
 
 ```
 #!/bin/bash -l
-#SBATCH -D /home/sbyfield/HapMap2Teo/ZeaLastZ/batch
-#SBATCH -J batchLastz
-#SBATCH -o /home/sbyfield/HapMap2Teo/ZeaLastZ/batch/out-%j.txt
-#SBATCH -e /home/sbyfield/HapMap2Teo/ZeaLastZ/batch/error-%j.txt
-#SBATCH --array=1-66
-#SBATCH --mem-per-cpu=8000
-
-##Simon Renny-Byfield, UC Davis, November 12 2014
-##Usage: sbatch -p queue <file.sh> <first.list> <second.list>
-
-##The <first.list> and <second.list> are files that contain the names of fasta files to be 
-##compared by Lastz. In my case, in total, they constitute all unique binary combos of 
-##the ~500 files (sequences) provided in the maize ref_v3 assembly.
-
-echo "Starting Job:"
-date
-
-index=0
-while read line; do
-   file1[index]="$line"
-   let "index++"
-done < $1 
-
-index=0
-while read line; do
-   file2[index]="$line"
-   let "index++"
-done < $2 
-
-target=${file1[$SLURM_ARRAY_TASK_ID]}
-query=${file2[$SLURM_ARRAY_TASK_ID]}
-
-lastz ~/CNVer/refZea/fasta_files_folder/$target ~/CNVer/refZea/fasta_files_folder/$query \
-         --hspthresh=5000 --format=axt > $target.$query.axt
-
-echo "Job Done:"
-date
-
-```
-
-Another possibility is to try analysing each seqeunce (e.g. 1.fasta, 2.fasta, 3.fasta,...) against the combined data set of all sequences. You would only need as many batch jobs as you have files and CNVer requires that you have one .axt file per sequence, and tis would be easily outputted with that arrangment. This can be achieved like this:
-
-```
-#!/bin/bash -l
-#SBATCH -D /home/sbyfield/HapMap2Teo/ZeaLastZ
+#SBATCH -D /home/sbyfield/CNVer/refZea/fasta_files_folder
 #SBATCH -J Lastz
-#SBATCH -o /home/sbyfield/HapMap2Teo/ZeaLastZ/Lastzout-%j.txt
-#SBATCH -e /home/sbyfield/HapMap2Teo/ZeaLastZ/Lastzerror-%j.txt
-#SBATCH --mem=10000
+#SBATCH -o /home/sbyfield/CNVer/refZea/fasta_files_folder/axt/Lastzout-%j.txt
+#SBATCH -e /home/sbyfield/CNVer/refZea/fasta_files_folder/axt/Lastzerror-%j.txt
+#SBATCH --mem=15000
+#SBATCH --array=10
 
 echo "Starting Job:"
 date
 
-lastz ~/home/sbyfield/HapMap2Teo/ZeaLastZ[multiple] ~/CNVer/refZea/fasta_files_folder/10.fasta --hspthresh=5000 > test10vall.txt
+#cd ~/CNVer/refZea/fasta_files_folder
+#shopt -s nullglob
+files=(*.fasta)
+INPUT=${files[$SLURM_ARRAY_TASK_ID]}
+lastz /home/sbyfield/HapMap2Teo/ZeaLastZ/Zea_mays_main_refgv3_chromosomes.fasta[multiple] ~/CNVer/refZea/fasta_files_folder/$INPUT --hspthresh=5000 --format=axt > ~/CNVer/refZea/fasta_files_folder/axt/$INPUT.axt
 
 echo "Job Done:"
 date
-```
-But that raiosed an error. The error is a memory issue and malloc_limit_index needs to be changed. I did this by modifying "utilities.h" to look like the following:
 
 ```
-//----------
-//
-// malloc sizing range
-//  (see also "sequence sizing types" in sequences.h)
-//	These types control the range of dynamically allocated block sizes we can
-//	handle.
-//
-//	Allocation lengths are normally assumed to be small enough to fit into a
-//	32-bit integer.  This gives a maximum length of about 4 billion bytes.
-//	Since the biggest allocation expected is four bytes per each base in a
-//	sequence, this limits the maximum sequence to about 1 billion bp (long
-//	even for possum chromosomes).  The programmer can override this at compile
-//	time by defining max_malloc_index as 31 or 40 (we also allow 20, but that
-//	is only to test whether the mechanism actually works).
-//
-//----------
 
-#define mallocOverhead 16
-
-#if defined(max_malloc_index)
-#define maxMallocIndex max_malloc_index
-#else
-#define maxMallocIndex 40     #I modifed this line to allow for more memory!
-#endif
-
-#if (maxMallocIndex == 31)
-#define mallocLimit ((u32max/2)-mallocOverhead)
-#elif (maxMallocIndex == 32)
-#define mallocLimit (u32max-mallocOverhead)
-#elif (maxMallocIndex == 40)
-#define mallocLimit (1099511627776LLU-mallocOverhead)
-#elif (maxMallocIndex == 20) // for debug only
-#define mallocLimit ((u32max/(1<<12))-mallocOverhead)
-#else
-#error ***** undecipherable max malloc length definition *****
-#endif
+The script I wrote named files badly, so I needed an extra step to rename them in a style that CNVer will recognize. So `cd` to the `/axt/` directory and then run the following command to alter the file names.
 
 ```
-This is not the full file just the appropriate section.
+rename 's/.fasta//' *.fasta.axt
+```
+
+This should remove the `.fasta` component of every file name. Additionally, I need to remove the `Chr` character from every file in the `/axt/` folder. This is because I ran lastZ on the fasta file that contains the full sequence name (e.g. Chr 1 | xcrds| ) rather thna the short hand version I have used for all the other analyses. This can be achieved with:
+```
+#/usr/bin/bash
+
+files=$(ls *fasta.axt)
+
+for i in ${files}; do
+  sed -i -e 's/Chr//' $i
+done
+```
+
+***The following option with mugsy is NOT used, it is kept just for a record***
 
 As an alternative I decided to try [Mugsy](http://www.ncbi.nlm.nih.gov/pmc/articles/PMC3031037/pdf/btq665.pdf), which can be downloaded from [here](http://mugsy.sourceforge.net). This program is more modern than LastZ and is potentailly easier as you can add in a single fasta file for each genome. The output is in MAF format, which may need to be converted at a later date. Here is the bash script used to invoke mugsy:
 
@@ -345,7 +284,7 @@ whilst in fasta_files_folder/
 
 ***6. Generate autosomes.txt***
 
-I believe this will be a direct copy of allChr.txt as *Zea mays* is a functional diploid.
+I believe this will be a direct copy of allChr.txt as *Zea mays* is a functional diploid and doesn't have sex chromosomes.
 
 
 

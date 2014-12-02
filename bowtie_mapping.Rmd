@@ -1,0 +1,72 @@
+---
+title: "Mapping Illumina reads with Bowtie for use with CNVer"
+author: "Simon Renny-Byfield"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+
+This document details my attempts at running bowtie to generate suitable `.bam` files for input into `CNVer`. Analysis of reads will be done using [paap](https://github.com/RILAB/paap), which records quality, trims reads, throws poor reads out and maps reads using (at the moment BWA-MEM). I can utilize the trimmed quality output of paap for input into bowtie, so as not to have to do the qulaity check and trim twice. I'll write my own script to run bowtie. But first, in order to get bowtie up and running I will need to generate a bowtie index for the reference genome.
+
+##Building a bowtie index##
+
+I used this the followign command to generate an index for the masked version of the APGv_3 referecnce sequence.
+
+```
+#!/bin/bash
+#SBATCH -D /home/sbyfield/CNVer
+#SBATCH -o /home/sbyfield/CNVer/logs/out_log-%j.txt
+#SBATCH -e /home/sbyfield/CNVer/logs/err_log-%j.txt
+#SBATCH -J index
+
+date
+
+cmd="bowtie-build Zmays_284_AGPv3.hardmasked_shortName.fa AGPv3"
+
+echo $cmd
+
+eval$cmd
+
+date
+```
+
+Next you have to map reads to the reference genome using bowtie. This can be achieved with a command something like this:
+
+```
+#!/bin/bash
+#SBATCH -D /home/sbyfield/CNVer
+#SBATCH -o /home/sbyfield/CNVer/logs/out_log-%j.txt
+#SBATCH -e /home/sbyfield/CNVer/logs/err_log-%j.txt
+#SBATCH -J bowtie
+
+echo "Starting Job: "
+date
+
+cmd="gunzip test_data/TIL01_3510_3807_3510_N_TIP521_4_R1.fastq.gz"
+echo $cmd
+eval $cmd
+
+cmd="bowtie AGPv3 test_data/TIL01_3510_3807_3510_N_TIP521_4_R1.fastq -p 12 -S -v 3 -a -m 600 --best --strata | samtools view -b -S -o bams/R1.bam -"
+echo $cmd
+eval $cmd
+
+cmd="gunzip test_data/TIL01_3510_3807_3510_N_TIP521_4_R2.fastq.gz"
+echo $cmd
+eval $cmd
+
+cmd="bowtie AGPv3 test_data/TIL01_3510_3807_3510_N_TIP521_4_R2.fastq -p 12 -S -v 3 -a -m 600 --best --strata | samtools view -b -S -o bams/R2.bam -"
+echo $cmd
+eval $cmd
+
+module load gcc/4.5 cnver
+
+cmd="interleave_bam bams/R1.bam bams/R2.bam bams/interleaved.bam"
+echo $cmd
+eval $cmd
+
+echo "Ending Job: "
+date
+```
