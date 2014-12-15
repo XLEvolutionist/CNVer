@@ -9,8 +9,9 @@ vignette: >
   \usepackage[utf8]{inputenc}
 ---
 
-This document tracks my first attempt at running [CNVer](http://compbio.cs.toronto.edu/CNVer/) on a test data set. CNVer is a program that estimates presence absence variants and copy number variants using mate pair/paired end Illumina sequence data. The purpose of this excercise is to identfiy PAV and CNV in a wild population of Teosinte (Palmar Chico) and in turn estimate the impact of PAVs/CNVs on estaimtes of SFS, pi and Tajima's D. 
+This document tracks my first attempt at running [CNVer](http://compbio.cs.toronto.edu/CNVer/) on a test data set. CNVer is a program that estimates presence absence variants and copy number variants using mate pair/paired end Illumina sequence data. The purpose of this excercise is to identfiy PAV and CNV in a wild population of Teosinte (Palmar Chico) and in turn estimate the impact of PAVs/CNVs on estimates of the *SFS*, *pi* and *Tajima's D*. 
 
+As the authors of `CNVer` suggest I will use [bowtie](http://bowtie-bio.sourceforge.net/index.shtml) to map reads to the AGPv3 reference genome. A detailed description of how this mapping is achieved is available [here](https://github.com/XLEvolutionist/CNVer/blob/master/bowtie_mapping.Rmd).
 The mapping is done like this:
 
 ```
@@ -70,5 +71,41 @@ eval $cmd
 echo "End Job: "
 date
 ```
-arguments are <mapping file> <format> <min length> <max length> <seq length>
+arguments are \<mapping file\> \<format\> \<min length\> \<max length\> \<seq length\>.
 
+##Running CNVer with a test dataset of one individual (TIL01)##
+
+Once the mean and standard deviation of insert size has been determined you can then run CNVer to estimate CNVs and PNVs. The command looks something like this:
+```
+#!/bin/bash -l
+#SBATCH -D /home/sbyfield/CNVer
+#SBATCH -J CNVER
+#SBATCH -o /home/sbyfield/CNVer/logs/out-%j.txt
+#SBATCH -e /home/sbyfield/CNVer/logs/error-%j.txt
+#SBATCH --mem=24000
+
+echo "Starting CNVer Job: "
+date
+echo "Loading module CNVer"
+module load gcc/4.5 cnver
+
+cmd="cnver.pl --map_list ~/CNVer/test.file.list.txt --ref_folder ~/CNVer/refZea/ --work_dir ~/CNVer/output --read_len 75 --mean_insert 111 --stdev_insert 25 --min_mps 4 --ref_names refChr.txt"
+echo $cmd
+eval $cmd
+
+echo "Ending Job: "
+date
+```
+
+A list, and details of the arguments are provided below:
+
+* **--map_list**  A list of the bam files to be used for mapping. In the original case only one file.
+* **--ref_folder**  The reference companion package, created as described in the [companion package](https://github.com/XLEvolutionist/CNVer/blob/master/companionPackage.Rmd) script, and is found in `/home/srbyfield/CNVer/refZea/`.
+* **--work_dir**  Where you would like the output to be stored.
+* **--read_len 75** The read length of the Illumina data
+* **--mean_insert** The mean insert size. Can be calculated as described above using the `find_mean_sd` script provided with the `CNVer` package.
+* **--stdev_insert**  The SD of the insert size. Also calculated with the `find_mean_sd` script provided with the `CNVer` package.
+* **--min_mps**  Min number of reads required to make a cluster.
+* **--ref_names** This is a file which details the chromosomes of interest (i.e. in this case only chr 10).
+
+I originaly run the above call with `--min_mps` set to 10, but this prodiced a graph with no nodes or edges. So i adjusted this parameter to be 4. Keep in mind that the `--min_mps` needs to be at least 2.

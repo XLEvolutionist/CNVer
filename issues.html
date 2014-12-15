@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+<meta name="author" content="Simon Renny-Byfield" />
+
+<meta name="date" content="2014-12-12" />
+
+<title>CNVer error, Walk-through</title>
+
+
+
+
+<link href="data:text/css,body%20%7B%0A%20%20background%2Dcolor%3A%20%23fff%3B%0A%20%20margin%3A%201em%20auto%3B%0A%20%20max%2Dwidth%3A%20700px%3B%0A%20%20overflow%3A%20visible%3B%0A%20%20padding%2Dleft%3A%202em%3B%0A%20%20padding%2Dright%3A%202em%3B%0A%20%20font%2Dfamily%3A%20%22Open%20Sans%22%2C%20%22Helvetica%20Neue%22%2C%20Helvetica%2C%20Arial%2C%20sans%2Dserif%3B%0A%20%20font%2Dsize%3A%2014px%3B%0A%20%20line%2Dheight%3A%201%2E35%3B%0A%7D%0A%0A%23header%20%7B%0A%20%20text%2Dalign%3A%20center%3B%0A%7D%0A%0A%23TOC%20%7B%0A%20%20clear%3A%20both%3B%0A%20%20margin%3A%200%200%2010px%2010px%3B%0A%20%20padding%3A%204px%3B%0A%20%20width%3A%20400px%3B%0A%20%20border%3A%201px%20solid%20%23CCCCCC%3B%0A%20%20border%2Dradius%3A%205px%3B%0A%0A%20%20background%2Dcolor%3A%20%23f6f6f6%3B%0A%20%20font%2Dsize%3A%2013px%3B%0A%20%20line%2Dheight%3A%201%2E3%3B%0A%7D%0A%20%20%23TOC%20%2Etoctitle%20%7B%0A%20%20%20%20font%2Dweight%3A%20bold%3B%0A%20%20%20%20font%2Dsize%3A%2015px%3B%0A%20%20%20%20margin%2Dleft%3A%205px%3B%0A%20%20%7D%0A%0A%20%20%23TOC%20ul%20%7B%0A%20%20%20%20padding%2Dleft%3A%2040px%3B%0A%20%20%20%20margin%2Dleft%3A%20%2D1%2E5em%3B%0A%20%20%20%20margin%2Dtop%3A%205px%3B%0A%20%20%20%20margin%2Dbottom%3A%205px%3B%0A%20%20%7D%0A%20%20%23TOC%20ul%20ul%20%7B%0A%20%20%20%20margin%2Dleft%3A%20%2D2em%3B%0A%20%20%7D%0A%20%20%23TOC%20li%20%7B%0A%20%20%20%20line%2Dheight%3A%2016px%3B%0A%20%20%7D%0A%0Atable%20%7B%0A%20%20margin%3A%201em%20auto%3B%0A%20%20border%2Dwidth%3A%201px%3B%0A%20%20border%2Dcolor%3A%20%23DDDDDD%3B%0A%20%20border%2Dstyle%3A%20outset%3B%0A%20%20border%2Dcollapse%3A%20collapse%3B%0A%7D%0Atable%20th%20%7B%0A%20%20border%2Dwidth%3A%202px%3B%0A%20%20padding%3A%205px%3B%0A%20%20border%2Dstyle%3A%20inset%3B%0A%7D%0Atable%20td%20%7B%0A%20%20border%2Dwidth%3A%201px%3B%0A%20%20border%2Dstyle%3A%20inset%3B%0A%20%20line%2Dheight%3A%2018px%3B%0A%20%20padding%3A%205px%205px%3B%0A%7D%0Atable%2C%20table%20th%2C%20table%20td%20%7B%0A%20%20border%2Dleft%2Dstyle%3A%20none%3B%0A%20%20border%2Dright%2Dstyle%3A%20none%3B%0A%7D%0Atable%20thead%2C%20table%20tr%2Eeven%20%7B%0A%20%20background%2Dcolor%3A%20%23f7f7f7%3B%0A%7D%0A%0Ap%20%7B%0A%20%20margin%3A%200%2E5em%200%3B%0A%7D%0A%0Ablockquote%20%7B%0A%20%20background%2Dcolor%3A%20%23f6f6f6%3B%0A%20%20padding%3A%200%2E25em%200%2E75em%3B%0A%7D%0A%0Ahr%20%7B%0A%20%20border%2Dstyle%3A%20solid%3B%0A%20%20border%3A%20none%3B%0A%20%20border%2Dtop%3A%201px%20solid%20%23777%3B%0A%20%20margin%3A%2028px%200%3B%0A%7D%0A%0Adl%20%7B%0A%20%20margin%2Dleft%3A%200%3B%0A%7D%0A%20%20dl%20dd%20%7B%0A%20%20%20%20margin%2Dbottom%3A%2013px%3B%0A%20%20%20%20margin%2Dleft%3A%2013px%3B%0A%20%20%7D%0A%20%20dl%20dt%20%7B%0A%20%20%20%20font%2Dweight%3A%20bold%3B%0A%20%20%7D%0A%0Aul%20%7B%0A%20%20margin%2Dtop%3A%200%3B%0A%7D%0A%20%20ul%20li%20%7B%0A%20%20%20%20list%2Dstyle%3A%20circle%20outside%3B%0A%20%20%7D%0A%20%20ul%20ul%20%7B%0A%20%20%20%20margin%2Dbottom%3A%200%3B%0A%20%20%7D%0A%0Apre%2C%20code%20%7B%0A%20%20background%2Dcolor%3A%20%23f7f7f7%3B%0A%20%20border%2Dradius%3A%203px%3B%0A%20%20color%3A%20%23333%3B%0A%7D%0Apre%20%7B%0A%20%20white%2Dspace%3A%20pre%2Dwrap%3B%20%20%20%20%2F%2A%20Wrap%20long%20lines%20%2A%2F%0A%20%20border%2Dradius%3A%203px%3B%0A%20%20margin%3A%205px%200px%2010px%200px%3B%0A%20%20padding%3A%2010px%3B%0A%7D%0Apre%3Anot%28%5Bclass%5D%29%20%7B%0A%20%20background%2Dcolor%3A%20%23f7f7f7%3B%0A%7D%0A%0Acode%20%7B%0A%20%20font%2Dfamily%3A%20Consolas%2C%20Monaco%2C%20%27Courier%20New%27%2C%20monospace%3B%0A%20%20font%2Dsize%3A%2085%25%3B%0A%7D%0Ap%20%3E%20code%2C%20li%20%3E%20code%20%7B%0A%20%20padding%3A%202px%200px%3B%0A%7D%0A%0Adiv%2Efigure%20%7B%0A%20%20text%2Dalign%3A%20center%3B%0A%7D%0Aimg%20%7B%0A%20%20background%2Dcolor%3A%20%23FFFFFF%3B%0A%20%20padding%3A%202px%3B%0A%20%20border%3A%201px%20solid%20%23DDDDDD%3B%0A%20%20border%2Dradius%3A%203px%3B%0A%20%20border%3A%201px%20solid%20%23CCCCCC%3B%0A%20%20margin%3A%200%205px%3B%0A%7D%0A%0Ah1%20%7B%0A%20%20margin%2Dtop%3A%200%3B%0A%20%20font%2Dsize%3A%2035px%3B%0A%20%20line%2Dheight%3A%2040px%3B%0A%7D%0A%0Ah2%20%7B%0A%20%20border%2Dbottom%3A%204px%20solid%20%23f7f7f7%3B%0A%20%20padding%2Dtop%3A%2010px%3B%0A%20%20padding%2Dbottom%3A%202px%3B%0A%20%20font%2Dsize%3A%20145%25%3B%0A%7D%0A%0Ah3%20%7B%0A%20%20border%2Dbottom%3A%202px%20solid%20%23f7f7f7%3B%0A%20%20padding%2Dtop%3A%2010px%3B%0A%20%20font%2Dsize%3A%20120%25%3B%0A%7D%0A%0Ah4%20%7B%0A%20%20border%2Dbottom%3A%201px%20solid%20%23f7f7f7%3B%0A%20%20margin%2Dleft%3A%208px%3B%0A%20%20font%2Dsize%3A%20105%25%3B%0A%7D%0A%0Ah5%2C%20h6%20%7B%0A%20%20border%2Dbottom%3A%201px%20solid%20%23ccc%3B%0A%20%20font%2Dsize%3A%20105%25%3B%0A%7D%0A%0Aa%20%7B%0A%20%20color%3A%20%230033dd%3B%0A%20%20text%2Ddecoration%3A%20none%3B%0A%7D%0A%20%20a%3Ahover%20%7B%0A%20%20%20%20color%3A%20%236666ff%3B%20%7D%0A%20%20a%3Avisited%20%7B%0A%20%20%20%20color%3A%20%23800080%3B%20%7D%0A%20%20a%3Avisited%3Ahover%20%7B%0A%20%20%20%20color%3A%20%23BB00BB%3B%20%7D%0A%20%20a%5Bhref%5E%3D%22http%3A%22%5D%20%7B%0A%20%20%20%20text%2Ddecoration%3A%20underline%3B%20%7D%0A%20%20a%5Bhref%5E%3D%22https%3A%22%5D%20%7B%0A%20%20%20%20text%2Ddecoration%3A%20underline%3B%20%7D%0A%0A%2F%2A%20Class%20described%20in%20https%3A%2F%2Fbenjeffrey%2Ecom%2Fposts%2Fpandoc%2Dsyntax%2Dhighlighting%2Dcss%0A%20%20%20Colours%20from%20https%3A%2F%2Fgist%2Egithub%2Ecom%2Frobsimmons%2F1172277%20%2A%2F%0A%0Acode%20%3E%20span%2Ekw%20%7B%20color%3A%20%23555%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%2F%2A%20Keyword%20%2A%2F%0Acode%20%3E%20span%2Edt%20%7B%20color%3A%20%23902000%3B%20%7D%20%2F%2A%20DataType%20%2A%2F%0Acode%20%3E%20span%2Edv%20%7B%20color%3A%20%2340a070%3B%20%7D%20%2F%2A%20DecVal%20%28decimal%20values%29%20%2A%2F%0Acode%20%3E%20span%2Ebn%20%7B%20color%3A%20%23d14%3B%20%7D%20%2F%2A%20BaseN%20%2A%2F%0Acode%20%3E%20span%2Efl%20%7B%20color%3A%20%23d14%3B%20%7D%20%2F%2A%20Float%20%2A%2F%0Acode%20%3E%20span%2Ech%20%7B%20color%3A%20%23d14%3B%20%7D%20%2F%2A%20Char%20%2A%2F%0Acode%20%3E%20span%2Est%20%7B%20color%3A%20%23d14%3B%20%7D%20%2F%2A%20String%20%2A%2F%0Acode%20%3E%20span%2Eco%20%7B%20color%3A%20%23888888%3B%20font%2Dstyle%3A%20italic%3B%20%7D%20%2F%2A%20Comment%20%2A%2F%0Acode%20%3E%20span%2Eot%20%7B%20color%3A%20%23007020%3B%20%7D%20%2F%2A%20OtherToken%20%2A%2F%0Acode%20%3E%20span%2Eal%20%7B%20color%3A%20%23ff0000%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%2F%2A%20AlertToken%20%2A%2F%0Acode%20%3E%20span%2Efu%20%7B%20color%3A%20%23900%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%2F%2A%20Function%20calls%20%2A%2F%20%0Acode%20%3E%20span%2Eer%20%7B%20color%3A%20%23a61717%3B%20background%2Dcolor%3A%20%23e3d2d2%3B%20%7D%20%2F%2A%20ErrorTok%20%2A%2F%0A%0A" rel="stylesheet" type="text/css" />
+
+</head>
+
+<body>
+
+
+
+<div id="header">
+<h1 class="title">CNVer error, Walk-through</h1>
+<h4 class="author"><em>Simon Renny-Byfield</em></h4>
+<h4 class="date"><em>2014-12-12</em></h4>
+</div>
+
+
+<p>This is a simple document attempting to detail the issue with CNVer, and follow the steps I have taken to try to resolve the problem. The problem is actually that the final output .cvs file is empty (as are many of the intermediate files). The <code>CNVer</code> run is performed like this:</p>
+<pre><code>#!/bin/bash -l
+#SBATCH -D /home/sbyfield/CNVer
+#SBATCH -J CNVER
+#SBATCH -o /home/sbyfield/CNVer/logs/out-%j.txt
+#SBATCH -e /home/sbyfield/CNVer/logs/error-%j.txt
+#SBATCH --mem=24000
+
+echo &quot;Starting CNVer Job: &quot;
+date
+echo &quot;Loading module CNVer&quot;
+module load gcc/4.5 cnver
+
+cmd=&quot;cnver.pl --map_list ~/CNVer/test.file.list.txt --ref_folder ~/CNVer/refZea/ --work_dir ~/CNVer/output --read_len 100 --mean_insert 112 --stdev_insert 23 --min_mps 4 --ref_names ~/CNVer/refChr.txt&quot;
+echo $cmd
+eval $cmd
+
+echo &quot;Ending Job: &quot;
+date</code></pre>
+<p>Scrolling through the log file I see this output:</p>
+<pre><code>Starting CNVer Job:
+Thu Dec  4 19:22:53 PST 2014
+Loading module CNVer
+cnver.pl --map_list ~/CNVer/test.file.list.txt --ref_folder ~/CNVer/refZea/ --work_dir ~/CNVer/output --read_len 100 --mean_insert 112 --stdev_insert 23 --min_mps 4 --ref_names ~/CNVer/refChr.txt
+Exec at 19:22:53, Thu Dec 4, 2014 (/share/apps/cnver-0.8.1/src/maps2bin /home/sbyfield/CNVer/test.file.list.txt /home/sbyfield/CNVer/refZea//allchr.txt bam &amp;);  /share/apps/cnver-0.8.1/src/cluster/concordancy_analysis  -r100 -d10000000 -l43 -u181 -m/home/sbyfield/CNVer/test.file.list.txt -n/home/sbyfield/CNVer/refZea//allchr.txt -ibam ...
+
+Exec at 0:43:34, Fri Dec 5, 2014 /share/apps/cnver-0.8.1/src/make_simple_coverage /home/sbyfield/CNVer/output/mapping_files/10.rmap /home/sbyfield/CNVer/output/10//10.scov 10 149632204...
+
+Exec at 0:43:51, Fri Dec 5, 2014 /share/apps/cnver-0.8.1/src/find_spikes /home/sbyfield/CNVer/output/10//10.scov  0 15 | grep -v low | awk '{ s=$2; if (s&gt;1) {s=s-2} else {s=0} print $1,s,$3+2,$4 }' &gt; /home/sbyfield/CNVer/output/10//10.spikes...
+
+Exec at 0:44:3, Fri Dec 5, 2014 /share/apps/cnver-0.8.1/src/make_ns /home/sbyfield/CNVer/refZea//fasta_files_folder/10.fa 10 &gt; /home/sbyfield/CNVer/output/10//10.ns...
+
+Exec at 0:44:5, Fri Dec 5, 2014 cat /home/sbyfield/CNVer/refZea//contig_breaks_folder/10.cbs /home/sbyfield/CNVer/refZea//repeat_regions_folder/10.rep /home/sbyfield/CNVer/output/10//10.ns /home/sbyfield/CNVer/output/10//10.spikes | sort -k 2n | /share/apps/cnver-0.8.1/src/interval_join &gt; /home/sbyfield/CNVer/output/10//10.masks...
+
+Exec at 0:44:8, Fri Dec 5, 2014 /share/apps/cnver-0.8.1/src/make_gc_map /home/sbyfield/CNVer/refZea//fasta_files_folder/10.fa /home/sbyfield/CNVer/output/10//10.masks /home/sbyfield/CNVer/output/10//10.scov /home/sbyfield/CNVer/output/10//10.gc 10 500 50...
+
+Exec at 0:44:31, Fri Dec 5, 2014 awk '{ if ($6 == 0) print $0 }'  /home/sbyfield/CNVer/output/mapping_files/10.mmap  | sort -k3n,3 -k4n,4 -k1n,1  | /share/apps/cnver-0.8.1/src/cluster/cluster_matepairs --mean=112 --stdev=23 --colID=-1 --colDist=0 --colChr=1 --colLeft=2 --colRight=3 --colTemplate=4 --baseLenFactor=1 --mdJoinTolerance=6 --type=0 --concise=1 &gt; /home/sbyfield/CNVer/output/10//10.t0...
+
+Exec at 0:44:32, Fri Dec 5, 2014 awk '{ if ($6 == 1) print $0 }'  /home/sbyfield/CNVer/output/mapping_files/10.mmap  | sort -k4n,4 -k3n,3 -k1n,1  | /share/apps/cnver-0.8.1/src/cluster/cluster_matepairs --mean=112 --stdev=23 --colID=-1 --colDist=0 --colChr=1 --colLeft=2 --colRight=3 --colTemplate=4 --baseLenFactor=1 --mdJoinTolerance=6 --type=1 --concise=1 &gt; /home/sbyfield/CNVer/output/10//10.t1...
+
+Exec at 0:44:33, Fri Dec 5, 2014 awk '{ if ($6 == 2) print $0 }'  /home/sbyfield/CNVer/output/mapping_files/10.mmap  | sort -k3n,3 -k4n,4 -k1n,1  | /share/apps/cnver-0.8.1/src/cluster/cluster_matepairs --mean=112 --stdev=23 --colID=-1 --colDist=0 --colChr=1 --colLeft=2 --colRight=3 --colTemplate=4 --baseLenFactor=1 --mdJoinTolerance=6 --type=2 --concise=1 &gt; /home/sbyfield/CNVer/output/10//10.t2...
+
+Exec at 0:44:34, Fri Dec 5, 2014 awk '{ if ($6 == 3) print $0 }'  /home/sbyfield/CNVer/output/mapping_files/10.mmap  | sort -k4n,4 -k3n,3 -k1n,1  | /share/apps/cnver-0.8.1/src/cluster/cluster_matepairs --mean=112 --stdev=23 --colID=-1 --colDist=0 --colChr=1 --colLeft=2 --colRight=3 --colTemplate=4 --baseLenFactor=1 --mdJoinTolerance=6 --type=3 --concise=1 &gt; /home/sbyfield/CNVer/output/10//10.t3...
+
+Exec at 0:44:36, Fri Dec 5, 2014 grep -h EDGE /home/sbyfield/CNVer/output/10//10.t[0123] | /share/apps/cnver-0.8.1/src/cluster/screen_contig_breaks --mean=112 --stdev=23 --tolerance=181 --breaksFile = /home/sbyfield/CNVer/refZea//contig_breaks_folder/10.cbs | awk '{ if (($5 &gt;= 4) &amp;&amp; ($8 &lt; 10000000)) print $0 }' &gt; /home/sbyfield/CNVer/output/10//10.links...
+
+Exec at 0:44:36, Fri Dec 5, 2014 /share/apps/cnver-0.8.1/src/axt_to_binary /home/sbyfield/CNVer/refZea//self_alignments_folder/10.axt 149632204 /home/sbyfield/CNVer/output/10//10.edges...
+Axtbin
+Exec at 0:45:19, Fri Dec 5, 2014 /share/apps/cnver-0.8.1/src/make_reference_graph /home/sbyfield/CNVer/output/10//10.edges /home/sbyfield/CNVer/output/10//10.graph...
+
+Exec at 0:45:19, Fri Dec 5, 2014 /share/apps/cnver-0.8.1/src/fill_reference_graph /home/sbyfield/CNVer/output/10//10.graph 149632204...
+
+Exec at 0:45:19, Fri Dec 5, 2014 /share/apps/cnver-0.8.1/src/make_donor_graph /home/sbyfield/CNVer/output/10//10.graph /home/sbyfield/CNVer/output/10//10.links /home/sbyfield/CNVer/output/10//10.scov /home/sbyfield/CNVer/output/10//10.masks /home/sbyfield/CNVer/output/10//10.gc 1&gt; /home/sbyfield/CNVer/output/10//10.problem 2&gt; /home/sbyfield/CNVer/output/10//10.graphinfo...
+
+Exec at 0:45:25, Fri Dec 5, 2014 perl /share/apps/cnver-0.8.1/src/flow_solve/make_cs2_graph.pl   10 10.problem 2 0 20 1 0 /share/apps/cnver-0.8.1/src/cs2-4.6/...
+Usage: /share/apps/cnver-0.8.1/src/flow_solve/make_cs2_graph.pl genome_length num_reads maxlines infile baseflow freelimit allownone cs2_dir
+Exec at 0:45:25, Fri Dec 5, 2014 /share/apps/cnver-0.8.1/src/report_cnvs /home/sbyfield/CNVer/output/10//10.graphinfo /home/sbyfield/CNVer/output/10//10.problem.out 100 0 2&gt; /home/sbyfield/CNVer/output/10//10.cnvs.raw 1&gt; /home/sbyfield/CNVer/output/10//10.used_dgs...
+
+Exec at 0:45:26, Fri Dec 5, 2014 cat /home/sbyfield/CNVer/output/10//10.cnvs.raw | /share/apps/cnver-0.8.1/src/intRemove2  /home/sbyfield/CNVer/refZea//contig_breaks_folder/10.cbs &gt; /home/sbyfield/CNVer/output/10//10.cnvs.raw.screened...
+
+Exec at 0:45:26, Fri Dec 5, 2014 /share/apps/cnver-0.8.1/src/smoother.sh 5 1000 10.cnvs.raw.screened &gt; /home/sbyfield/CNVer/output/10//10.cnvs.smoothed...
+
+Exec at 0:45:26, Fri Dec 5, 2014 cat /home/sbyfield/CNVer/output/10//10.cnvs.smoothed | awk -v OFS=&quot;\t&quot; '{ if ($4 &gt; 0) print $1, $2, $3, &quot;gain&quot;; else print $1, $2, $3, &quot;loss&quot; }' | /share/apps/cnver-0.8.1/src/post_analysis/doc_walker /home/sbyfield/CNVer/output/10//10.scov /home/sbyfield/CNVer/output/10//10.gc | awk -v OFS=&quot;\t&quot; '{ print $1, $2, $3, $4, $6 }' &gt; /home/sbyfield/CNVer/output/calls//10.cnv$
+
+Ending Job:
+Fri Dec  5 00:45:26 PST 2014</code></pre>
+<p>The important thing to note is that one of the calls seems to fail due to too few command line arguments, and this call is given below. Importantly several command line arguments are missing and are listed below. I will try to address these in list order.</p>
+<pre><code>Exec at 0:45:25, Fri Dec 5, 2014 perl /share/apps/cnver-0.8.1/src/flow_solve/make_cs2_graph.pl   10 10.problem 2 0 20 1 0 /share/apps/cnver-0.8.1/src/cs2-4.6/...
+Usage: /share/apps/cnver-0.8.1/src/flow_solve/make_cs2_graph.pl genome_length num_reads maxlines infile baseflow freelimit allownone cs2_dir</code></pre>
+<div id="the-genome_length-argument-is-missing" class="section level2">
+<h2>The <em>genome_length</em> argument is missing</h2>
+<p>Below is shown a section of the script <code>cnver.pl</code>, which controls the flow of the program, and this genome_length variable is defined in this section.</p>
+<pre><code>  #make the donor graph
+    execCommand(&quot;$CNVER_FOLDER/src/make_donor_graph $work_fol/$ref.graph $work_fol/$ref.links $work_fol/$ref.scov $work_fol/$ref.masks $work_fol/$ref.gc 1&gt; $work_fol/$ref.problem 2&gt; $work_fol/$ref.graphinfo&quot;);
+
+    my $contiglen = `tail -n 1 $work_fol/$ref.graphinfo | awk '{print \$2 }' `;
+    my $numreads  = `tail -n 1 $work_fol/$ref.graphinfo | awk '{print \$3 }' `;
+    chomp $contiglen;
+    chomp $numreads;
+
+    chdir ($work_fol);
+    #prepare graph for cs2 solver and solve it
+    execCommand (&quot;perl $CNVER_FOLDER/src/flow_solve/make_cs2_graph.pl $contiglen $numreads 10 $ref.problem 2 0 20 1 0 $CNVER_FOLDER/src/cs2-4.6/&quot;);</code></pre>
+<p>The important part is this <code>my $contiglen = ``tail -n 1 $work_fol/$ref.graphinfo | awk '{print \$2 }' ``;</code>. So this call reads in <code>$ref.graphinfo</code> and determines the contig length from this file. Currently the file <code>10.graphinfo</code> is empty, so the call fails. So the next question is what call makes the file <code>10.graphinfo</code>… It is actually the previous call:</p>
+<pre><code>#make the donor graph
+  execCommand(&quot;$CNVER_FOLDER/src/make_donor_graph $work_fol/$ref.graph $work_fol/$ref.links $work_fol/$ref.scov $work_fol/$ref.masks $work_fol/$ref.gc 1&gt; $work_fol/$ref.problem 2&gt; $work_fol/$ref.graphinfo&quot;);</code></pre>
+<p>The actual call used by CNVer is listed in the log file and is</p>
+<pre><code>/share/apps/cnver-0.8.1/src/make_donor_graph /home/sbyfield/CNVer/output/10//10.graph /home/sbyfield/CNVer/output/10//10.links /home/sbyfield/CNVer/output/10//10.scov /home/sbyfield/CNVer/output/10//10.masks /home/sbyfield/CNVer/output/10//10.gc 1&gt; /home/sbyfield/CNVer/output/10//10.problem 2&gt; /home/sbyfield/CNVer/output/10//10.graphinfo...</code></pre>
+<p>The arguments to this call are files. They exist and are not emtpy but the first argument, the file <code>10.graph</code>, looks like this:</p>
+<pre><code>^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^A^@^@^@^@^@^@^@�4�^H^@^@^@^@+^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@</code></pre>
+<p>So what call creates this file…? The following command seems to make the <code>.graph</code> file.</p>
+<pre><code>execCommand (&quot;$CNVER_FOLDER/src/make_reference_graph $work_fol/$ref.edges $work_fol/$ref.graph&quot;);</code></pre>
+<p>The <code>$ref.edges</code> file is empty, so no wonder the <code>.graph</code> file is empty. So back track again. What makes the <code>.edges</code> file. The program takes the <code>.axt</code> file and input. This file looks like this:</p>
+<pre><code># lastz.v1.02.00 --hspthresh=5000 --format=axt 
+#
+# hsp_threshold      = 5000
+# gapped_threshold   = 5000
+# x_drop             = 910
+# y_drop             = 9400
+# gap_open_penalty   = 400
+# gap_extend_penalty = 30
+#        A    C    G    T
+#   A   91 -114  -31 -123
+#   C -114  100 -125  -31
+#   G  -31 -125  100 -114
+#   T -123  -31 -114   91
+0 Chr1 4550 4683 10 116888684 116888805 + 7788
+GTTTTAGTAACCTTGCCATGTTACTAAAACGATTAAGGGGGTGTTTGGTTACCCCTGCTAAAGTTTAGCCCGGGTCACATCAAGCGTTTGACTTTCAAATAGGAGTATGAAATATAGACCCAACCAACTGGACT
+GTTCTAGCGATGCTGTCAT------------ACTGAGGGGGTGTTTGGTTCTGTGGACTAAAGTTTAGCCAGGGTCACATCAAGCGTTTGACTTTCAAGTAGGAGTATGAAATATAGACCCAACCAACTGTACT
+
+1 Chr1 4552 4658 10 5766072 5766178 + 6153
+TTTAGTAACCTTGCCATGTTACTAAAACGATTAAGGGGGTGTTTGGTTACCCCTGCTAAAGTTTAGCCCGGGTCACATCAAGCGTTTGACTTTCAAATAGGAGTATG
+TTCAGTGTTCTTGTCTCCTTTTGGACCCTACTCAGGCTGTATTTGGTTGCTCCTGCTAAAGTTTAGCTCGGGTCACATCAAGCGTTTGACTTTTAAATAGGAGTATG</code></pre>
+<p>Notice that the <em>hit</em> chromosome is labelled like this <code>Chr1</code> but it should be just <code>1</code>. This is probably the source of the problem. I need to use unix commands in order to remove the <code>Chr</code> component of the name. Something like this should do the trick:</p>
+<pre><code>#/usr/bin/bash
+
+files=$(ls *.axt)
+
+for i in ${files}; do
+  sed -i -e 's/Chr//g' $i
+done</code></pre>
+<p>I tested this step of the analysis by running the same call as described in the log file to see if removing Chr from the <code>.axt</code> file helped. The command I used is as follows:</p>
+<pre><code>#!/bin/bash
+/share/apps/cnver-0.8.1/src/axt_to_binary /home/sbyfield/CNVer/refZea//self_alignments_folder/10.axt 149632204 /home/sbyfield/CNVer/output/10//10.edges</code></pre>
+<p>and this produces output! and the <code>.edges</code> file is being made!</p>
+<p>The file is made, but there seems to another issue. The call fails midway through making the file with the following error:</p>
+<pre><code>Exec at 1:23:20, Sun Dec 7, 2014 /share/apps/cnver-0.8.1/src/make_reference_graph /home/sbyfield/CNVer/output/10//10.edges /home/sbyfield/CNVer/output/10//10.graph...
+Merging the same edge???</code></pre>
+</div>
+<div id="not-all-reads-in-the-til01-and-til11-data-have-pairs" class="section level2">
+<h2>Not all reads in the TIL01 and TIL11 data have pairs</h2>
+<p>On further inspection I discovered that the two fastq files containing the paired reads do not contain exactly equivalent sets of reads. That is some pairs are missing from either one of the files. I big problem for CNVer and this violates one of the <a href="http://compbio.cs.toronto.edu/cnver/README-0.8.1.txt">assumptions</a> of <code>CNVer</code>. This is not a problem for the first 20 teosinte parents that we already have, but is a problem with the TIL01 and TIL11 samples that we need to quality check the CNV calls. In response I wrote a script in perl to filter the HUGE fastq files using an index and a fastq stream from Bio::Index::Fastq and Bio::SeqIO::fastq. Here is the script:</p>
+<pre><code>#!/usr/bin/perl
+use strict;
+use warnings;
+use Bio::Index::Fastq;
+use Bio::SeqIO::fastq;
+
+#Simom Renny-Byfield, UC Davis, Dec `14
+
+#this code takes paired fastq files and filters the reads for only those that have 
+#a match in both files. That is, any read that has had it's mate discarded will be thrown
+#out
+
+#usage &lt;script.pl&gt; &lt;read1&gt; &lt;read2&gt;
+
+#make an index for one of the fastq files.
+my $Index_File_Name0 = &quot;$ARGV[0].idx&quot;;
+#make the index for the first file
+my $inx0 = Bio::Index::Fastq-&gt;new(
+        '-filename' =&gt; $Index_File_Name0,
+        '-write_flag' =&gt; 1);
+    $inx0-&gt;make_index($ARGV[0]);
+
+#now set up a fastq stream with Bio::SeqIO:fastq
+my $in = Bio::SeqIO-&gt;new(-format    =&gt; 'fastq-sanger',
+                           -file      =&gt; $ARGV[1]);
+#now create two output streams, one for each of the pair                           
+my $out0 = Bio::SeqIO-&gt;new(-format    =&gt; 'fastq-sanger',
+                            -file      =&gt; &quot;&gt;$ARGV[0].clean&quot;);   
+my $out1 = Bio::SeqIO-&gt;new(-format    =&gt; 'fastq-sanger',
+                            -file      =&gt; &quot;&gt;$ARGV[1].clean&quot;);
+
+#now open the Bio::SeqIO::fastq stream (the second file) and try to grab the sequence in
+#the first file. If not present skip to the next sequence. This essentially abandons non-
+#paired reads.
+  
+# $seq is a Bio::SeqIO::fastq object
+while (my $seq1 = $in-&gt;next_seq) {
+      #do stuff
+      my $id1 = $seq1-&gt;id;
+      if ( my $seq0 = $inx0-&gt;fetch($id1) ) {
+        $out0-&gt;write_seq($seq0);
+        $out1-&gt;write_seq($seq1);
+      }#if
+      else {
+        print &quot;Did not match, next seq\n&quot;;
+      }#else
+}#while    
+
+exit;</code></pre>
+<p>Essentailly this script looks for read IDs from the fastq stream in the index of the opposing file. Any reads without matches are discarded. I imagine this will be pretty slow (<code>BioPerl</code> is not the quickest of cats), and we may need a different approach when we come to quality check the paired reads for the rest of the data. In fact it takes an age just to generate the <code>.idx</code> file (currently at 5 hours), so we will definitely need to not generate the situation where pairs are lost. I has now been running for 16 hrs… far too slow. It hasn’t even finished indexing the fastq file.</p>
+<p>An alternative approach presents itself: After some research I discovered that the program <a href="http://compbio.cs.toronto.edu/cnver/README-0.8.1.txt">sickle</a> will trim and maintain the paired end information in paired fastq files. This is probably the way forward in terms of trimming.</p>
+<p>I subsequently went back and used the merged (unfiltered at this point), reads that apparently have the same number of reads, and mapped these using bowtie. Then <code>interleaved_bam</code> script and sorted the reads based on name using <code>samtools sort -n</code>.</p>
+<p>I then used <code>samtools flagstat &lt;in.bam&gt;</code> to check that the <code>.bam</code> contains properly paired reads, what is needed for <code>CNVer</code>. <a href="https://www.biostars.org/p/12475/">Here</a> is an interesting blog post about the meaning of the output of <code>samtools flagstat</code>. An example:</p>
+<pre><code>20968800 + 0 mapped (100.00%:nan%)
+20968800 + 0 paired in sequencing</code></pre>
+<p>These two numbers should be the same if the reads are “paired in sequencing”. This does not produce the expected results:</p>
+<pre><code>992777935 + 0 in total (QC-passed reads + QC-failed reads)
+0 + 0 duplicates
+208214994 + 0 mapped (20.97%:-nan%)
+0 + 0 paired in sequencing
+0 + 0 read1
+0 + 0 read2
+0 + 0 properly paired (-nan%:-nan%)
+0 + 0 with itself and mate mapped
+0 + 0 singletons (-nan%:-nan%)
+0 + 0 with mate mapped to a different chr
+0 + 0 with mate mapped to a different chr (mapQ&gt;=5)</code></pre>
+<p><code>samtools</code> does not recognize the reads as paired, put at least there is an even number of reads. Odd would indicate that there are some reads missing.</p>
+</div>
+
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

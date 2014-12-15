@@ -271,8 +271,6 @@ srcSize -- The size of the entire source sequence, not just the parts involved i
 text -- The nucleotides (or amino acids) in the alignment and any insertions (dashes) as well.
 ```
 
-
-
 ***5. Generate allchr.txt***
 
 I achieved this with the following command:
