@@ -250,3 +250,4 @@ These two numbers should be the same if the reads are "paired in sequencing". Th
 ```
 `samtools` does not recognize the reads as paired, put at least there is an even number of reads. Odd would indicate that there are some reads missing.
 
+I have attempted to run `CNVer` on the whole genome, rather tha just chromsomes 10. This will may hopefully, miraculously solve the "merging same edge!!" problem.
