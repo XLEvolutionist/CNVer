@@ -251,3 +251,7 @@ These two numbers should be the same if the reads are "paired in sequencing". Th
 `samtools` does not recognize the reads as paired, put at least there is an even number of reads. Odd would indicate that there are some reads missing.
 
 I have attempted to run `CNVer` on the whole genome, rather tha just chromsomes 10. This will may hopefully, miraculously solve the "merging same edge!!" problem.
+
+I found this [website](http://moo.nac.uci.edu/~hjm/cnver_bduc_howto.html#_step_4_convert_sort_bowtie_output_to_be_compatible_with_cnver) with a description of how to prepare the bam files for input into cnver. I will follow their advice and use the same parameters to see if that makes a differnce. **It didn't solve the problem**
+
+srun -p bigmemh --pty --mem 32000 bash
