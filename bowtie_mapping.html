@@ -85,6 +85,49 @@ eval $cmd
 
 echo &quot;Ending Job: &quot;
 date</code></pre>
+<p>I found this <a href="http://moo.nac.uci.edu/~hjm/cnver_bduc_howto.html#_step_4_convert_sort_bowtie_output_to_be_compatible_with_cnver">website</a> with a description of how to prepare the bam files for input into cnver. I will follow their advice and use the same parameters to see if that makes a differnce. <strong>It didn’t solve the problem</strong>. This issue is documented in another markdown script <a href="https://github.com/XLEvolutionist/CNVer/blob/master/issues.Rmd">issues.Rmd</a> and I have resorted to re-doing the mapping using the above example as a template.</p>
+<p>The latest scrip to use bowtie is as follows.</p>
+<pre><code>#!/bin/bash
+#SBATCH -D /home/sbyfield/CNVer/test_data
+#SBATCH -o /home/sbyfield/CNVer/logs/out_log-%j.txt
+#SBATCH -e /home/sbyfield/CNVer/logs/err_log-%j.txt
+#SBATCH -J bowtie
+#SBATCH --cpus-per-task 10
+#SBATCH --array=0-19
+#SBATCH --mem=10000
+
+declare -a list
+readarray list &lt; ../paired.fastq.txt
+
+files=${list[$SLURM_ARRAY_TASK_ID]}
+echo $files
+
+file1=`echo $files | cut -d &quot; &quot; -f1`
+file2=`echo $files | cut -d &quot; &quot; -f2`
+
+echo &quot;Starting Job on $file: &quot;
+date
+
+cmd=&quot;mkfifo my_queue.$file1.fifo&quot;
+echo $cmd
+eval $cmd
+
+cmd=&quot;mkfifo my_queue.$file2.fifo&quot;
+echo $cmd
+eval $cmd
+
+echo $file1
+echo $file2
+zcat $file1 &gt;  my_queue.$file1.fifo &amp; 
+zcat $file2 &gt;  my_queue.$file2.fifo &amp;
+
+bowtie ../AGPv3 -1 my_queue.$file1.fifo -2 my_queue.$file2.fifo -p 8 -S -v 2 -a -m 600 --best --strata | samtools view -b -S - | samtools sort -n -m 8GB - - &gt; ../bams/$file1.combine$
+
+rm my_queue.$file1.fifo
+rm my_queue.$file2.fifo
+
+echo &quot;Ending Job: &quot;
+date</code></pre>
 </div>
 
 

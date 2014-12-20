@@ -109,3 +109,5 @@ A list, and details of the arguments are provided below:
 * **--ref_names** This is a file which details the chromosomes of interest (i.e. in this case only chr 10).
 
 I originaly run the above call with `--min_mps` set to 10, but this prodiced a graph with no nodes or edges. So i adjusted this parameter to be 4. Keep in mind that the `--min_mps` needs to be at least 2.
+
+I am having issues getting the pipeline to run. The issues are documented in [issues.Rmd](https://github.com/XLEvolutionist/CNVer/blob/master/issues.Rmd), and a modifed bowtie mapping run has been added to [bowtie mapping](https://github.com/XLEvolutionist/CNVer/blob/master/bowtie_mapping.Rmd)
