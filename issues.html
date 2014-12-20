@@ -10,7 +10,7 @@
 
 <meta name="author" content="Simon Renny-Byfield" />
 
-<meta name="date" content="2014-12-16" />
+<meta name="date" content="2014-12-19" />
 
 <title>CNVer error, Walk-through</title>
 
@@ -28,7 +28,7 @@
 <div id="header">
 <h1 class="title">CNVer error, Walk-through</h1>
 <h4 class="author"><em>Simon Renny-Byfield</em></h4>
-<h4 class="date"><em>2014-12-16</em></h4>
+<h4 class="date"><em>2014-12-19</em></h4>
 </div>
 
 
@@ -227,12 +227,14 @@ exit;</code></pre>
 0 + 0 read1
 0 + 0 read2
 0 + 0 properly paired (-nan%:-nan%)
-0 + 0 with itself and mate mapped
+0 + 0 with itself and mate mappe
 0 + 0 singletons (-nan%:-nan%)
 0 + 0 with mate mapped to a different chr
 0 + 0 with mate mapped to a different chr (mapQ&gt;=5)</code></pre>
 <p><code>samtools</code> does not recognize the reads as paired, put at least there is an even number of reads. Odd would indicate that there are some reads missing.</p>
 <p>I have attempted to run <code>CNVer</code> on the whole genome, rather tha just chromsomes 10. This will may hopefully, miraculously solve the “merging same edge!!” problem.</p>
+<p>I found this <a href="http://moo.nac.uci.edu/~hjm/cnver_bduc_howto.html#_step_4_convert_sort_bowtie_output_to_be_compatible_with_cnver">website</a> with a description of how to prepare the bam files for input into cnver. I will follow their advice and use the same parameters to see if that makes a differnce. <strong>It didn’t solve the problem</strong></p>
+<p>srun -p bigmemh –pty –mem 32000 bash</p>
 </div>
 
 
