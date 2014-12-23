@@ -110,7 +110,7 @@ echo $file2
 zcat $file1 >  my_queue.$file1.fifo & 
 zcat $file2 >  my_queue.$file2.fifo &
 
-bowtie ../AGPv3 -1 my_queue.$file1.fifo -2 my_queue.$file2.fifo -p 8 -S -v 2 -a -m 600 --best --strata | samtools view -b -S - | samtools sort -n -m 8GB - ../bams/$file1.combine
+bowtie ../AGPv3 -1 my_queue.$file1.fifo -2 my_queue.$file2.fifo -p 8 -S -v 2 -a -m 600 -n 3 --best --strata | samtools view -b -S - | samtools sort -n -m 8GB - ../bams/$file1.combine
 
 rm my_queue.$file1.fifo
 rm my_queue.$file2.fifo
